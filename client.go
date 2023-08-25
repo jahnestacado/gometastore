@@ -47,12 +47,8 @@ const (
 	bufferSize = 1024 * 1024
 )
 
-type OIDCProvider interface {
-	GetToken(ctx context.Context) (string, func(), error)
-}
-
 type Options struct {
-	OIDCProvider
+	AuthToken      string
 	ConnectTimeout *time.Duration
 }
 
@@ -126,16 +122,11 @@ func Open(host string, port int, options *Options) (*MetastoreClient, error) {
 		options:   options,
 	}
 
-	if options != nil && options.OIDCProvider != nil {
-		var token string
+	if options != nil && options.AuthToken != "" {
 		ctx, cancel := context.WithTimeout(context.Context(context.Background()), *options.ConnectTimeout)
 		defer cancel()
 
-		token, _, err = options.OIDCProvider.GetToken(ctx)
-		if err != nil {
-			return nil, err
-		}
-		_, err = c.SetUgi(context.Background(), token, []string{"oidc"})
+		_, err = c.SetUgi(ctx, options.AuthToken, []string{"oidc"})
 		if err != nil {
 			return nil, err
 		}
