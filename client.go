@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package hmsclient
+package gometastore
 
 import (
 	"context"
@@ -22,8 +22,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/akolb1/gometastore/hmsclient/thrift/gen-go/hive_metastore"
 	"github.com/apache/thrift/lib/go/thrift"
+	"github.com/jahnestacado/gometastore/thrift/gen-go/hive_metastore"
 )
 
 type TableType int
@@ -58,7 +58,6 @@ type Options struct {
 
 // MetastoreClient represents client handle.
 type MetastoreClient struct {
-	context   context.Context
 	transport thrift.TTransport
 	client    *hive_metastore.ThriftHiveMetastoreClient
 	server    string
@@ -120,7 +119,6 @@ func Open(host string, port int, options *Options) (*MetastoreClient, error) {
 	}
 
 	m := &MetastoreClient{
-		context:   context.Background(),
 		transport: transport,
 		client:    c,
 		server:    host,
@@ -158,18 +156,18 @@ func (c *MetastoreClient) Clone() (client *MetastoreClient, err error) {
 }
 
 // GetAllDatabases returns list of all Hive databases.
-func (c *MetastoreClient) GetAllDatabases() ([]string, error) {
-	return c.client.GetAllDatabases(c.context)
+func (c *MetastoreClient) GetAllDatabases(ctx context.Context) ([]string, error) {
+	return c.client.GetAllDatabases(ctx)
 }
 
 // GetDatabases returns list of all databases matching pattern. The pattern is interpreted by HMS.
-func (c *MetastoreClient) GetDatabases(pattern string) ([]string, error) {
-	return c.client.GetDatabases(c.context, pattern)
+func (c *MetastoreClient) GetDatabases(ctx context.Context, pattern string) ([]string, error) {
+	return c.client.GetDatabases(ctx, pattern)
 }
 
 // GetDatabase returns detailed information about specified Hive database.
-func (c *MetastoreClient) GetDatabase(dbName string) (*Database, error) {
-	db, err := c.client.GetDatabase(c.context, dbName)
+func (c *MetastoreClient) GetDatabase(ctx context.Context, dbName string) (*Database, error) {
+	db, err := c.client.GetDatabase(ctx, dbName)
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +188,7 @@ func (c *MetastoreClient) GetDatabase(dbName string) (*Database, error) {
 }
 
 // CreateDatabase creates database with the specified name, description, parameters and owner.
-func (c *MetastoreClient) CreateDatabase(db *Database) error {
+func (c *MetastoreClient) CreateDatabase(ctx context.Context, db *Database) error {
 	database := &hive_metastore.Database{
 		Name:        db.Name,
 		Description: db.Description,
@@ -209,7 +207,7 @@ func (c *MetastoreClient) CreateDatabase(db *Database) error {
 	if db.OwnerType != 0 {
 		database.OwnerType = &db.OwnerType
 	}
-	return c.client.CreateDatabase(c.context, database)
+	return c.client.CreateDatabase(ctx, database)
 }
 
 // DropDatabases removes the database specified by name
@@ -218,34 +216,34 @@ func (c *MetastoreClient) CreateDatabase(db *Database) error {
 //	dbName     - database name
 //	deleteData - if true, delete data as well
 //	cascade    - delete everything under the db if true
-func (c *MetastoreClient) DropDatabase(dbName string, deleteData bool, cascade bool) error {
-	return c.client.DropDatabase(c.context, dbName, deleteData, cascade)
+func (c *MetastoreClient) DropDatabase(ctx context.Context, dbName string, deleteData bool, cascade bool) error {
+	return c.client.DropDatabase(ctx, dbName, deleteData, cascade)
 }
 
 // GetAllTables returns list of all table names for a given database
-func (c *MetastoreClient) GetAllTables(dbName string) ([]string, error) {
-	return c.client.GetAllTables(c.context, dbName)
+func (c *MetastoreClient) GetAllTables(ctx context.Context, dbName string) ([]string, error) {
+	return c.client.GetAllTables(ctx, dbName)
 }
 
 // GetTables returns list of tables matching given pattern for the given database.
 // Matching is performed on the server side.
-func (c *MetastoreClient) GetTables(dbName string, pattern string) ([]string, error) {
-	return c.client.GetTables(c.context, dbName, pattern)
+func (c *MetastoreClient) GetTables(ctx context.Context, dbName string, pattern string) ([]string, error) {
+	return c.client.GetTables(ctx, dbName, pattern)
 }
 
 // GetTableObjects returns list of Table objects for the given database and list of table names.
-func (c *MetastoreClient) GetTableObjects(dbName string, tableNames []string) ([]*hive_metastore.Table, error) {
-	return c.client.GetTableObjectsByName(c.context, dbName, tableNames)
+func (c *MetastoreClient) GetTableObjects(ctx context.Context, dbName string, tableNames []string) ([]*hive_metastore.Table, error) {
+	return c.client.GetTableObjectsByName(ctx, dbName, tableNames)
 }
 
 // GetTable returns detailed information about the specified table
-func (c *MetastoreClient) GetTable(dbName string, tableName string) (*hive_metastore.Table, error) {
-	return c.client.GetTable(c.context, dbName, tableName)
+func (c *MetastoreClient) GetTable(ctx context.Context, dbName string, tableName string) (*hive_metastore.Table, error) {
+	return c.client.GetTable(ctx, dbName, tableName)
 }
 
 // CreateTable Creates HMS table
-func (c *MetastoreClient) CreateTable(table *hive_metastore.Table) error {
-	return c.client.CreateTable(c.context, table)
+func (c *MetastoreClient) CreateTable(ctx context.Context, table *hive_metastore.Table) error {
+	return c.client.CreateTable(ctx, table)
 }
 
 // DropTable drops table.
@@ -254,84 +252,84 @@ func (c *MetastoreClient) CreateTable(table *hive_metastore.Table) error {
 //	dbName     - Database name
 //	tableName  - Table name
 //	deleteData - if True, delete data as well
-func (c *MetastoreClient) DropTable(dbName string, tableName string, deleteData bool) error {
-	return c.client.DropTable(c.context, dbName, tableName, deleteData)
+func (c *MetastoreClient) DropTable(ctx context.Context, dbName string, tableName string, deleteData bool) error {
+	return c.client.DropTable(ctx, dbName, tableName, deleteData)
 }
 
 // GetPartitionNames returns list of partition names for a table.
-func (c *MetastoreClient) GetPartitionNames(dbName string, tableName string, max int) ([]string, error) {
-	return c.client.GetPartitionNames(c.context, dbName, tableName, int16(max))
+func (c *MetastoreClient) GetPartitionNames(ctx context.Context, dbName string, tableName string, max int) ([]string, error) {
+	return c.client.GetPartitionNames(ctx, dbName, tableName, int16(max))
 }
 
 // GetPartitionByName returns Partition for the given partition name.
-func (c *MetastoreClient) GetPartitionByName(dbName string, tableName string,
+func (c *MetastoreClient) GetPartitionByName(ctx context.Context, dbName string, tableName string,
 	partName string) (*hive_metastore.Partition, error) {
-	return c.client.GetPartitionByName(c.context, dbName, tableName, partName)
+	return c.client.GetPartitionByName(ctx, dbName, tableName, partName)
 }
 
 // GetPartitionsByNames returns multiple partitions specified by names.
-func (c *MetastoreClient) GetPartitionsByNames(dbName string, tableName string,
+func (c *MetastoreClient) GetPartitionsByNames(ctx context.Context, dbName string, tableName string,
 	partNames []string) ([]*hive_metastore.Partition, error) {
-	return c.client.GetPartitionsByNames(c.context, dbName, tableName, partNames)
+	return c.client.GetPartitionsByNames(ctx, dbName, tableName, partNames)
 }
 
 // AddPartition adds partition to Hive table.
-func (c *MetastoreClient) AddPartition(partition *hive_metastore.Partition) (*hive_metastore.Partition, error) {
-	return c.client.AddPartition(c.context, partition)
+func (c *MetastoreClient) AddPartition(ctx context.Context, partition *hive_metastore.Partition) (*hive_metastore.Partition, error) {
+	return c.client.AddPartition(ctx, partition)
 }
 
 // AddPartitions adds multipe partitions in a single call.
-func (c *MetastoreClient) AddPartitions(newParts []*hive_metastore.Partition) error {
-	_, err := c.client.AddPartitions(c.context, newParts)
+func (c *MetastoreClient) AddPartitions(ctx context.Context, newParts []*hive_metastore.Partition) error {
+	_, err := c.client.AddPartitions(ctx, newParts)
 	return err
 }
 
 // GetPartitions returns all (or up to maxCount partitions of a table.
-func (c *MetastoreClient) GetPartitions(dbName string, tableName string,
+func (c *MetastoreClient) GetPartitions(ctx context.Context, dbName string, tableName string,
 	maxCount int) ([]*hive_metastore.Partition, error) {
-	return c.client.GetPartitions(c.context, dbName, tableName, int16(maxCount))
+	return c.client.GetPartitions(ctx, dbName, tableName, int16(maxCount))
 }
 
 // DropPartitionByName drops partition specified by name.
-func (c *MetastoreClient) DropPartitionByName(dbName string,
+func (c *MetastoreClient) DropPartitionByName(ctx context.Context, dbName string,
 	tableName string, partName string, dropData bool) (bool, error) {
-	return c.client.DropPartitionByName(c.context, dbName, tableName, partName, dropData)
+	return c.client.DropPartitionByName(ctx, dbName, tableName, partName, dropData)
 }
 
 // DropPartition drops partition specified by values.
-func (c *MetastoreClient) DropPartition(dbName string,
+func (c *MetastoreClient) DropPartition(ctx context.Context, dbName string,
 	tableName string, values []string, dropData bool) (bool, error) {
-	return c.client.DropPartition(c.context, dbName, tableName, values, dropData)
+	return c.client.DropPartition(ctx, dbName, tableName, values, dropData)
 }
 
 // DropPartitions drops multiple partitions within a single table.
 // Partitions are specified by names.
-func (c *MetastoreClient) DropPartitions(dbName string,
+func (c *MetastoreClient) DropPartitions(ctx context.Context, dbName string,
 	tableName string, partNames []string) error {
 	dropRequest := hive_metastore.NewDropPartitionsRequest()
 	dropRequest.DbName = dbName
 	dropRequest.TblName = tableName
 	dropRequest.Parts = &hive_metastore.RequestPartsSpec{Names: partNames}
-	_, err := c.client.DropPartitionsReq(c.context, dropRequest)
+	_, err := c.client.DropPartitionsReq(ctx, dropRequest)
 	return err
 }
 
 // GetCurrentNotificationId returns value of last notification ID
-func (c *MetastoreClient) GetCurrentNotificationId() (int64, error) {
-	r, err := c.client.GetCurrentNotificationEventId(c.context)
+func (c *MetastoreClient) GetCurrentNotificationId(ctx context.Context) (int64, error) {
+	r, err := c.client.GetCurrentNotificationEventId(ctx)
 	return r.EventId, err
 }
 
 // AlterTable modifies existing table with data from the new table
-func (c *MetastoreClient) AlterTable(dbName string, tableName string,
+func (c *MetastoreClient) AlterTable(ctx context.Context, dbName string, tableName string,
 	table *hive_metastore.Table) error {
-	return c.client.AlterTable(c.context, dbName, tableName, table)
+	return c.client.AlterTable(ctx, dbName, tableName, table)
 }
 
 // GetNextNotification returns next available notification.
-func (c *MetastoreClient) GetNextNotification(lastEvent int64,
+func (c *MetastoreClient) GetNextNotification(ctx context.Context, lastEvent int64,
 	maxEvents int32) ([]*hive_metastore.NotificationEvent, error) {
-	r, err := c.client.GetNextNotification(c.context,
+	r, err := c.client.GetNextNotification(ctx,
 		&hive_metastore.NotificationEventRequest{LastEvent: lastEvent, MaxEvents: &maxEvents})
 	if err != nil {
 		return nil, err
@@ -345,9 +343,9 @@ func (c *MetastoreClient) GetNextNotification(lastEvent int64,
 //	db - database name pattern
 //	table - table name pattern
 //	tableTypes - list of Table types - should be either TABLE or VIEW
-func (c *MetastoreClient) GetTableMeta(db string,
+func (c *MetastoreClient) GetTableMeta(ctx context.Context, db string,
 	table string, tableTypes []string) ([]*hive_metastore.TableMeta, error) {
-	return c.client.GetTableMeta(c.context, db, table, tableTypes)
+	return c.client.GetTableMeta(ctx, db, table, tableTypes)
 }
 
 // GetTablesByType returns list of tables matching specified search criteria.
@@ -356,7 +354,7 @@ func (c *MetastoreClient) GetTableMeta(db string,
 //	dbName - database name
 //	table - table name pattern
 //	tableType - Table type - should be either TABLE or VIEW
-func (c *MetastoreClient) GetTablesByType(dbName string,
+func (c *MetastoreClient) GetTablesByType(ctx context.Context, dbName string,
 	table string, tableType string) ([]string, error) {
-	return c.client.GetTablesByType(c.context, dbName, table, tableType)
+	return c.client.GetTablesByType(ctx, dbName, table, tableType)
 }

@@ -12,38 +12,39 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package hmsclient_test
+package gometastore_test
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 	"strconv"
 	"testing"
 
-	"github.com/akolb1/gometastore/hmsclient"
+	"github.com/jahnestacado/gometastore"
 )
 
 func ExampleOpen() {
-	client, err := hmsclient.Open("localhost", 9083)
+	client, err := gometastore.Open("localhost", 9083, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(client.GetAllDatabases())
+	fmt.Println(client.GetAllDatabases(context.Background()))
 }
 
 func ExampleMetastoreClient_GetAllDatabases() {
-	client, err := hmsclient.Open("localhost", 9083)
+	client, err := gometastore.Open("localhost", 9083, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer client.Close()
-	fmt.Println(client.GetAllDatabases())
+	fmt.Println(client.GetAllDatabases(context.Background()))
 }
 
 func TestOpenBadHost(t *testing.T) {
 	t.Log("connecting to fake host")
-	client, err := hmsclient.Open("foobar", 1)
+	client, err := gometastore.Open("foobar", 1, nil)
 	if err == nil {
 		t.Error("connection to bad host succeeded")
 	}
@@ -52,7 +53,7 @@ func TestOpenBadHost(t *testing.T) {
 	}
 }
 
-func getClient(t *testing.T) (*hmsclient.MetastoreClient, error) {
+func getClient(t *testing.T) (*gometastore.MetastoreClient, error) {
 	host := os.Getenv("HMS_SERVER")
 	port := os.Getenv("HMS_PORT")
 	if port == "" {
@@ -68,7 +69,7 @@ func getClient(t *testing.T) (*hmsclient.MetastoreClient, error) {
 
 	}
 	t.Log("connecting to", host)
-	client, err := hmsclient.Open(host, int(portVal))
+	client, err := gometastore.Open(host, int(portVal), nil)
 	if err != nil {
 		t.Error("failed connection to", host, err)
 		return nil, err
@@ -82,7 +83,7 @@ func TestGetDatabases(t *testing.T) {
 		return
 	}
 	defer client.Close()
-	databases, err := client.GetAllDatabases()
+	databases, err := client.GetAllDatabases(context.Background())
 	if err != nil {
 		t.Error("failed to get databases", err)
 		return
@@ -106,12 +107,12 @@ func TestMetastoreClient_CreateDatabase(t *testing.T) {
 	}
 	defer client.Close()
 	description := "test database"
-	err = client.CreateDatabase(&hmsclient.Database{Name: dbName, Description: description, Owner: owner})
+	err = client.CreateDatabase(context.Background(), &gometastore.Database{Name: dbName, Description: description, Owner: owner})
 	if err != nil {
 		t.Error("failed to create database:", err)
 		return
 	}
-	db, err := client.GetDatabase(dbName)
+	db, err := client.GetDatabase(context.Background(), dbName)
 	if err != nil {
 		t.Error("failed to get database:", err)
 		return
@@ -125,7 +126,7 @@ func TestMetastoreClient_CreateDatabase(t *testing.T) {
 	if owner != db.Owner {
 		t.Errorf("owner %s is not equal %s", db.Owner, owner)
 	}
-	err = client.DropDatabase(dbName, true, false)
+	err = client.DropDatabase(context.Background(), dbName, true, false)
 	if err != nil {
 		t.Error("failed to drop database", err)
 		return

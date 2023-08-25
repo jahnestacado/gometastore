@@ -7,25 +7,25 @@ This is an adjusted version of the [Hive metastore client library](https://githu
 Standard `go get`:
 
 ```
-$ go get github.com/jahnestacado/gometastore/hmsclient
+$ go get github.com/jahnestacado/gometastore
 ```
 
 ## Example usage:
 
     import	(
         "log"
-        "github.com/jahnestacado/gometastore/hmsclient"
+        "github.com/jahnestacado/gometastore"
         "time"
     )
     
     func printDatabases(accessToken string, connectionTimeout time.Duration) {
-        options = hmsclient.Options{AuthToken: accessToken, ConnectTimeout: &connectionTimeout}
-        client, err := hmsclient.Open("localhost", 9083, &options)
+        options = gometastore.Options{AuthToken: accessToken, ConnectTimeout: &connectionTimeout}
+        client, err := gometastore.Open("localhost", 9083, &options)
         if err != nil {
             log.Fatal(err)
         }
         defer client.Close()
-        databases, err := client.GetAllDatabases()
+        databases, err := client.GetAllDatabases(context.Background())
         if err != nil {
             log.Fatal(err)
         }

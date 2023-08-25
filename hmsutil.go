@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package hmsclient
+package gometastore
 
 import (
 	"fmt"
 	"strings"
 
-	"github.com/akolb1/gometastore/hmsclient/thrift/gen-go/hive_metastore"
+	"github.com/jahnestacado/gometastore/thrift/gen-go/hive_metastore"
 )
 
 const (
@@ -221,8 +221,9 @@ func (pb *PartitionBuilder) WithParameter(key string, value string) *PartitionBu
 // MakePartition creates Partition object from ordered list of partition values.
 // Only string values are currently supported.
 // Parameters:
-//   table  - Hive table for which partition is added
-//   values - List of partition values which should match partition schema
+//
+//	table  - Hive table for which partition is added
+//	values - List of partition values which should match partition schema
 func MakePartition(table *hive_metastore.Table,
 	values []string, parameters map[string]string,
 	location string) (*hive_metastore.Partition, error) {
