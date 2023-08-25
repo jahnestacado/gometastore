@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package hmsclient_test
+package gometastore_test
 
 import (
 	"fmt"
@@ -21,11 +21,11 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/akolb1/gometastore/hmsclient"
+	"github.com/jahnestacado/gometastore"
 )
 
 func ExampleOpen() {
-	client, err := hmsclient.Open("localhost", 9083)
+	client, err := gometastore.Open("localhost", 9083, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -33,7 +33,7 @@ func ExampleOpen() {
 }
 
 func ExampleMetastoreClient_GetAllDatabases() {
-	client, err := hmsclient.Open("localhost", 9083)
+	client, err := gometastore.Open("localhost", 9083, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -43,7 +43,7 @@ func ExampleMetastoreClient_GetAllDatabases() {
 
 func TestOpenBadHost(t *testing.T) {
 	t.Log("connecting to fake host")
-	client, err := hmsclient.Open("foobar", 1)
+	client, err := gometastore.Open("foobar", 1, nil)
 	if err == nil {
 		t.Error("connection to bad host succeeded")
 	}
@@ -52,7 +52,7 @@ func TestOpenBadHost(t *testing.T) {
 	}
 }
 
-func getClient(t *testing.T) (*hmsclient.MetastoreClient, error) {
+func getClient(t *testing.T) (*gometastore.MetastoreClient, error) {
 	host := os.Getenv("HMS_SERVER")
 	port := os.Getenv("HMS_PORT")
 	if port == "" {
@@ -68,7 +68,7 @@ func getClient(t *testing.T) (*hmsclient.MetastoreClient, error) {
 
 	}
 	t.Log("connecting to", host)
-	client, err := hmsclient.Open(host, int(portVal))
+	client, err := gometastore.Open(host, int(portVal), nil)
 	if err != nil {
 		t.Error("failed connection to", host, err)
 		return nil, err
@@ -106,7 +106,7 @@ func TestMetastoreClient_CreateDatabase(t *testing.T) {
 	}
 	defer client.Close()
 	description := "test database"
-	err = client.CreateDatabase(&hmsclient.Database{Name: dbName, Description: description, Owner: owner})
+	err = client.CreateDatabase(&gometastore.Database{Name: dbName, Description: description, Owner: owner})
 	if err != nil {
 		t.Error("failed to create database:", err)
 		return

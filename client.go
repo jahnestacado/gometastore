@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package hmsclient
+package gometastore
 
 import (
 	"context"
@@ -22,8 +22,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/akolb1/gometastore/hmsclient/thrift/gen-go/hive_metastore"
 	"github.com/apache/thrift/lib/go/thrift"
+	"github.com/jahnestacado/gometastore/thrift/gen-go/hive_metastore"
 )
 
 type TableType int
