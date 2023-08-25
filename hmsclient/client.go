@@ -47,6 +47,15 @@ const (
 	bufferSize = 1024 * 1024
 )
 
+type OIDCProvider interface {
+	GetToken(ctx context.Context) (string, func(), error)
+}
+
+type Options struct {
+	OIDCProvider
+	ConnectTimeout *time.Duration
+}
+
 // MetastoreClient represents client handle.
 type MetastoreClient struct {
 	context   context.Context
@@ -54,6 +63,7 @@ type MetastoreClient struct {
 	client    *hive_metastore.ThriftHiveMetastoreClient
 	server    string
 	port      int
+	options   *Options
 }
 
 // Database is a container of other objects in Hive.
@@ -71,7 +81,7 @@ func (val TableType) String() string {
 }
 
 // Open connection to metastore and return client handle.
-func Open(host string, port int) (*MetastoreClient, error) {
+func Open(host string, port int, options *Options) (*MetastoreClient, error) {
 	server := host
 	portStr := strconv.Itoa(port)
 	if strings.Contains(host, ":") {
@@ -83,8 +93,17 @@ func Open(host string, port int) (*MetastoreClient, error) {
 		portStr = pStr
 	}
 
+	if options == nil {
+		options = &Options{}
+	}
+
+	if options == nil || options != nil && options.ConnectTimeout == nil {
+		timeout := 0 * time.Second
+		options.ConnectTimeout = &timeout
+	}
+
 	socket := thrift.NewTSocketConf(net.JoinHostPort(server, portStr), &thrift.TConfiguration{
-		ConnectTimeout: 30 * time.Second,
+		ConnectTimeout: *options.ConnectTimeout,
 	})
 	transportFactory := thrift.NewTBufferedTransportFactory(bufferSize)
 	protocolFactory := thrift.NewTBinaryProtocolFactoryDefault()
@@ -99,13 +118,32 @@ func Open(host string, port int) (*MetastoreClient, error) {
 	if err1 := transport.Open(); err1 != nil {
 		return nil, fmt.Errorf("failed to open connection to %s:%s: %v", server, portStr, err1)
 	}
-	return &MetastoreClient{
+
+	m := &MetastoreClient{
 		context:   context.Background(),
 		transport: transport,
 		client:    c,
 		server:    host,
 		port:      port,
-	}, nil
+		options:   options,
+	}
+
+	if options != nil && options.OIDCProvider != nil {
+		var token string
+		ctx, cancel := context.WithTimeout(context.Context(context.Background()), *options.ConnectTimeout)
+		defer cancel()
+
+		token, _, err = options.OIDCProvider.GetToken(ctx)
+		if err != nil {
+			return nil, err
+		}
+		_, err = c.SetUgi(context.Background(), token, []string{"oidc"})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return m, nil
 }
 
 // Close connection to metastore.
@@ -116,7 +154,7 @@ func (c *MetastoreClient) Close() {
 
 // Clone metastore client and return a new client with its own connection to metastore.
 func (c *MetastoreClient) Clone() (client *MetastoreClient, err error) {
-	return Open(c.server, c.port)
+	return Open(c.server, c.port, c.options)
 }
 
 // GetAllDatabases returns list of all Hive databases.
@@ -176,9 +214,10 @@ func (c *MetastoreClient) CreateDatabase(db *Database) error {
 
 // DropDatabases removes the database specified by name
 // Parameters:
-//   dbName     - database name
-//   deleteData - if true, delete data as well
-//   cascade    - delete everything under the db if true
+//
+//	dbName     - database name
+//	deleteData - if true, delete data as well
+//	cascade    - delete everything under the db if true
 func (c *MetastoreClient) DropDatabase(dbName string, deleteData bool, cascade bool) error {
 	return c.client.DropDatabase(c.context, dbName, deleteData, cascade)
 }
@@ -211,9 +250,10 @@ func (c *MetastoreClient) CreateTable(table *hive_metastore.Table) error {
 
 // DropTable drops table.
 // Parameters
-//   dbName     - Database name
-//   tableName  - Table name
-//   deleteData - if True, delete data as well
+//
+//	dbName     - Database name
+//	tableName  - Table name
+//	deleteData - if True, delete data as well
 func (c *MetastoreClient) DropTable(dbName string, tableName string, deleteData bool) error {
 	return c.client.DropTable(c.context, dbName, tableName, deleteData)
 }
@@ -301,9 +341,10 @@ func (c *MetastoreClient) GetNextNotification(lastEvent int64,
 
 // GetTableMeta returns list of tables matching specified search criteria.
 // Parameters:
-//  db - database name pattern
-//  table - table name pattern
-//  tableTypes - list of Table types - should be either TABLE or VIEW
+//
+//	db - database name pattern
+//	table - table name pattern
+//	tableTypes - list of Table types - should be either TABLE or VIEW
 func (c *MetastoreClient) GetTableMeta(db string,
 	table string, tableTypes []string) ([]*hive_metastore.TableMeta, error) {
 	return c.client.GetTableMeta(c.context, db, table, tableTypes)
@@ -311,9 +352,10 @@ func (c *MetastoreClient) GetTableMeta(db string,
 
 // GetTablesByType returns list of tables matching specified search criteria.
 // Parameters:
-//  dbName - database name
-//  table - table name pattern
-//  tableType - Table type - should be either TABLE or VIEW
+//
+//	dbName - database name
+//	table - table name pattern
+//	tableType - Table type - should be either TABLE or VIEW
 func (c *MetastoreClient) GetTablesByType(dbName string,
 	table string, tableType string) ([]string, error) {
 	return c.client.GetTablesByType(c.context, dbName, table, tableType)
