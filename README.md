@@ -1,7 +1,12 @@
 # GO Hive Metastore Client
 
-This is an adjusted version of the [Hive metastore client library](https://github.com/akolb1/gometastore/tree/master/hmsclient) for Golang that set an AuthToken via the Thrift `SetUGI` method. 
-This is a custom hack fo in-house use only!
+This is an adjusted version of the [Hive metastore client library](https://github.com/akolb1/gometastore/tree/master/hmsclient) for Golang.
+
+The main differences from the original package are:
+* use of golang context to timeout calls
+* sets an AuthToken via the Thrift `SetUGI` method for supported OIDC. This is a dirty hack for in-house use only!
+ 
+
 
 ## Installation
 
