@@ -18,11 +18,11 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/akolb1/gometastore/hmsclient"
+	"github.com/jahnestacado/gometastore/hmsclient"
 )
 
 func Example() {
-	client, err := hmsclient.Open("localhost", 9083)
+	client, err := hmsclient.Open("localhost", 9083, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
