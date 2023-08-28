@@ -92,7 +92,7 @@ func Open(host string, port int, options *Options) (*MetastoreClient, error) {
 		options = &Options{}
 	}
 
-	if options == nil || options != nil && options.ConnectTimeout == nil {
+	if options.ConnectTimeout == nil {
 		timeout := 30 * time.Second
 		options.ConnectTimeout = &timeout
 	}
